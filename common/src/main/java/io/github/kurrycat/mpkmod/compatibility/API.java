@@ -159,7 +159,7 @@ public class API {
         public static void onServerConnect(boolean isLocal) {
             List<String> modules = new ArrayList<>();
             ModuleManager.moduleMap.forEach((id, module) -> modules.add(id));
-            Minecraft.Interface.get().ifPresent(i -> i.sendPacket(new MPKPacketRegister(API.VERSION, modules)));
+            Minecraft.sendPacket(new MPKPacketRegister(API.VERSION, modules));
             Minecraft.updateWorldState(Event.EventType.SERVER_CONNECT, isLocal);
             if (Main.discordRpcInitialized) DiscordRPC.updateWorldAndPlayState();
         }

@@ -14,6 +14,15 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @InfoString.AccessInstance
 public class Minecraft {
+    private static Interface impl;
+
+    public static void setImpl(Interface impl) {
+        if (Minecraft.impl != null)
+            throw new IllegalStateException("Cannot set impl twice!");
+
+        Minecraft.impl = impl;
+    }
+
     public static String version;
     public static String vfpVersion = null;
     public static WorldState worldState = WorldState.MENU;
@@ -24,10 +33,11 @@ public class Minecraft {
     @InfoString.Getter
     public static String getIp() {
         if (isSingleplayer()) return "Singleplayer";
-        return Interface.get().map(Interface::getIP).orElseGet(() -> {
-            API.LOGGER.info(API.COMPATIBILITY_MARKER, "Failed to get IP, are you playing on an unsupported minecraft version?");
-            return "Failed getting IP";
-        });
+
+        String ip = impl.getIP();
+
+        if (ip == null) return "Multiplayer";
+        return ip;
     }
 
     @InfoString.Getter
@@ -37,18 +47,12 @@ public class Minecraft {
 
     @InfoString.Getter
     public static String getFps() {
-        return Interface.get().map(Interface::getFPS).orElseGet(() -> {
-            API.LOGGER.info(API.COMPATIBILITY_MARKER, "Failed to get FPS, are you playing on an unsupported minecraft version?");
-            return "Error";
-        });
+        return impl.getFPS();
     }
 
     @InfoString.Getter
     public static int getPing() {
-        return Interface.get().map(Interface::getPing).orElseGet(() -> {
-            API.LOGGER.info(API.COMPATIBILITY_MARKER, "Failed to get Ping, are you playing on an unsupported minecraft version?");
-            return -1;
-        });
+        return impl.getPing();
     }
 
     @InfoString.Getter
@@ -58,21 +62,11 @@ public class Minecraft {
 
     @InfoString.Getter
     public static String getUsername() {
-        if (!Interface.get().isPresent()) {
-            API.LOGGER.info(API.COMPATIBILITY_MARKER, "Failed to get username, are you playing on an unsupported minecraft version?");
-            return "Error";
-        } else {
-            return Interface.get().get().getUserName();
-        }
+        return impl.getUserName();
     }
 
     public static String getCurrentGuiScreen() {
-        if (!Interface.get().isPresent()) {
-            API.LOGGER.info(API.COMPATIBILITY_MARKER, "Failed to get current screen name, are you playing on an unsupported minecraft version?");
-            return "Error";
-        } else {
-            return Interface.get().get().getCurrentGuiScreen();
-        }
+        return impl.getCurrentGuiScreen();
     }
 
     @InfoString.Getter
@@ -93,11 +87,11 @@ public class Minecraft {
     }
 
     public static void displayGuiScreen(MPKGuiScreen screen) {
-        Interface.get().ifPresent(i -> i.displayGuiScreen(screen));
+        impl.displayGuiScreen(screen);
     }
 
     public static void copyToClipboard(String str) {
-        Interface.get().ifPresent(i -> i.copyToClipboard(str));
+        impl.copyToClipboard(str);
     }
 
     public static boolean setInputs(TickInput inputs) {
@@ -109,15 +103,11 @@ public class Minecraft {
 
     public static boolean setInputs(Float yaw, boolean relYaw, Float pitch, boolean relPitch, int pressedInputs, int releasedInputs, int L, int R) {
         if (!Minecraft.isSingleplayer()) return false;
-        if (!Interface.get().isPresent()) {
-            API.LOGGER.info(API.COMPATIBILITY_MARKER, "Failed to set inputs, are you playing on an unsupported minecraft version?");
-            return false;
-        }
-        return Interface.get().get().setInputs(yaw, relYaw, pitch, relPitch, pressedInputs, releasedInputs, L, R);
+        return impl.setInputs(yaw, relYaw, pitch, relPitch, pressedInputs, releasedInputs, L, R);
     }
 
     public static boolean isF3Enabled() {
-        return Interface.get().map(Interface::isF3Enabled).orElse(false);
+        return impl.isF3Enabled();
     }
 
     @InfoString.Getter
@@ -127,6 +117,11 @@ public class Minecraft {
 
     public static void toggleSprint() {
         sprintToggled = !sprintToggled;
+    }
+
+
+    public static void sendPacket(MPKPacket packet) {
+        impl.sendPacket(packet);
     }
 
 
@@ -141,11 +136,7 @@ public class Minecraft {
         AFK;
     }
 
-    public interface Interface extends FunctionHolder {
-        static Optional<Interface> get() {
-            return API.getFunctionHolder(Interface.class);
-        }
-
+    public interface Interface {
         String getIP();
 
         String getFPS();
