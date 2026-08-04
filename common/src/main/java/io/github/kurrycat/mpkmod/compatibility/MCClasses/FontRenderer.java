@@ -1,14 +1,21 @@
 package io.github.kurrycat.mpkmod.compatibility.MCClasses;
 
-import io.github.kurrycat.mpkmod.compatibility.API;
 import io.github.kurrycat.mpkmod.gui.components.ComponentHolder;
 import io.github.kurrycat.mpkmod.util.Colors;
 import io.github.kurrycat.mpkmod.util.Vector2D;
 
 import java.awt.*;
-import java.util.Optional;
 
 public class FontRenderer {
+    private static Interface impl;
+
+    public static void setImpl(Interface impl) {
+        if (FontRenderer.impl != null)
+            throw new IllegalStateException("Cannot set impl twice!");
+
+        FontRenderer.impl = impl;
+    }
+
     public static double DEFAULT_FONT_SIZE = 9;
 
     /**
@@ -70,23 +77,19 @@ public class FontRenderer {
     }
 
     public static Vector2D getStringSize(String text, double fontSize) {
-        return Interface.get().map(f -> f.getStringSize(text, fontSize)).orElse(Vector2D.ZERO.copy());
+        return impl.getStringSize(text, fontSize);
     }
 
     public static void drawString(String text, double x, double y, Color color, double fontSize, boolean shadow) {
-        Interface.get().ifPresent(f ->
-                f.drawString(Colors.RESET.getCode() + text,
-                        x, y, color, fontSize, shadow));
+        impl.drawString(Colors.RESET.getCode() + text,
+                        x, y, color, fontSize, shadow);
     }
 
     public static void drawMonospaceString(String text, double x, double y, Color color, double fontSize, boolean shadow) {
         for (int i = 0; i < text.length(); i++) {
-            int finalI = i;
-            Interface.get().ifPresent(f -> {
-                if (text.charAt(finalI) == ' ') return;
-                f.drawString(Colors.RESET.getCode() + text.charAt(finalI),
-                        x + finalI * fontSize * 6d / 9d, y, color, fontSize, shadow);
-            });
+            if (text.charAt(i) == ' ') return;
+            impl.drawString(Colors.RESET.getCode() + text.charAt(i),
+                        x + i * fontSize * 6d / 9d, y, color, fontSize, shadow);
         }
     }
 
@@ -146,11 +149,7 @@ public class FontRenderer {
         drawMonospaceString(text, pos.sub(0, getStringSize(text).getY() / 2), color, shadow);
     }
 
-    public interface Interface extends FunctionHolder {
-        static Optional<Interface> get() {
-            return API.getFunctionHolder(Interface.class);
-        }
-
+    public interface Interface {
         void drawString(String text, double x, double y, Color color, double fontSize, boolean shadow);
 
         Vector2D getStringSize(String text, double fontSize);
