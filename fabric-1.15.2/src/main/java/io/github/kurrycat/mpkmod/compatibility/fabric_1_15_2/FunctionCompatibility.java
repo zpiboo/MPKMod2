@@ -21,6 +21,8 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.Window;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.Util;
@@ -340,6 +342,14 @@ public class FunctionCompatibility implements FunctionHolder,
         return split[0];
     }
 
+    public static int ping = -1;
+
+    public int getPing() {
+        //PlayerInfo info = net.minecraft.client.Minecraft.getInstance().getConnection().getListedOnlinePlayers().stream().filter(playerInfo -> playerInfo.getProfile().id().equals(net.minecraft.client.Minecraft.getInstance().player.getUUID())).findFirst().get();
+        //return info.getLatency();
+        return ping;
+    }
+
     public void displayGuiScreen(MPKGuiScreen screen) {
         MinecraftClient.getInstance().openScreen(
                 screen == null
@@ -364,7 +374,7 @@ public class FunctionCompatibility implements FunctionHolder,
     }
 
     /**
-     * Is called in {@link io.github.kurrycat.mpkmod.compatibility.MCClasses.Minecraft.Interface Minecraft.Interface}
+     * Is called in {@link Minecraft.Interface}
      */
     public String getUserName() {
         if (MinecraftClient.getInstance().player == null) return null;
@@ -376,7 +386,7 @@ public class FunctionCompatibility implements FunctionHolder,
     }
 
     public boolean setInputs(Float yaw, boolean relYaw, Float pitch, boolean relPitch, int pressedInputs, int releasedInputs, int L, int R) {
-        if (!io.github.kurrycat.mpkmod.compatibility.MCClasses.Minecraft.isSingleplayer()) return false;
+        if (!Minecraft.isSingleplayer()) return false;
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if (player == null) return false;
         GameOptions op = MinecraftClient.getInstance().options;
@@ -453,5 +463,39 @@ public class FunctionCompatibility implements FunctionHolder,
 
     public void endSection() {
         MinecraftClient.getInstance().getProfiler().pop();
+    }
+
+    @Override
+    public Player.KeyInput getKeyInput() {
+        Entity cameraEntity = MinecraftClient.getInstance().getCameraEntity();
+        if (!(cameraEntity instanceof LivingEntity)) return new Player.KeyInput();
+        LivingEntity le = (LivingEntity) cameraEntity;
+
+        boolean w, a, s, d, sprint, sneak, jump = false;
+        if (cameraEntity instanceof ClientPlayerEntity) {
+            ClientPlayerEntity lp = (ClientPlayerEntity) cameraEntity;
+
+            w = lp.input.pressingForward;
+            a = lp.input.pressingLeft;
+            s = lp.input.pressingBack;
+            d = lp.input.pressingRight;
+
+            sprint = MinecraftClient.getInstance().options.keySprint.isPressed();
+            sneak = lp.input.sneaking;
+            jump = lp.input.jumping;
+        } else {
+            w = le.forwardSpeed > 0;
+            a = le.sidewaysSpeed > 0;
+            s = le.forwardSpeed < 0;
+            d = le.sidewaysSpeed < 0;
+
+            sprint = le.isSprinting();
+            sneak = le.isSneaking();
+            try {
+                jump = LivingEntity.class.getDeclaredField("jumping").getBoolean(le);
+            } catch (IllegalAccessException | NoSuchFieldException ignore) {}
+        }
+
+        return new Player.KeyInput(w, a, s, d, sprint, sneak, jump);
     }
 }

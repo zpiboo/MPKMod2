@@ -3,6 +3,7 @@ package io.github.kurrycat.mpkmod.compatibility.fabric_1_15_2;
 import io.github.kurrycat.mpkmod.compatibility.API;
 import io.github.kurrycat.mpkmod.compatibility.MCClasses.Profiler;
 import io.github.kurrycat.mpkmod.util.MathUtil;
+import io.github.kurrycat.mpkmod.util.Mouse;
 import io.github.kurrycat.mpkmod.util.Vector2D;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -47,19 +48,19 @@ public class MPKGuiScreen extends Screen {
         return false;
     }
 
-    public boolean mouseClicked(double mouseX, double mouseY, int state) {
-        eventReceiver.onMouseClicked(new Vector2D(mouseX, mouseY), state);
-        return super.mouseClicked(mouseX, mouseY, state);
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        eventReceiver.onMouseClicked(new Vector2D(mouseX, mouseY), Mouse.Button.fromInt(button));
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    public boolean mouseReleased(double mouseX, double mouseY, int state) {
-        eventReceiver.onMouseReleased(new Vector2D(mouseX, mouseY), state);
-        return super.mouseReleased(mouseX, mouseY, state);
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        eventReceiver.onMouseReleased(new Vector2D(mouseX, mouseY), Mouse.Button.fromInt(button));
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    public boolean mouseDragged(double mouseX, double mouseY, int clickedMouseButton, double moveX, double moveY) {
-        eventReceiver.onMouseClickMove(new Vector2D(mouseX, mouseY), clickedMouseButton, 0);
-        return super.mouseDragged(mouseX, mouseY, clickedMouseButton, moveX, moveY);
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double moveX, double moveY) {
+        eventReceiver.onMouseClickMove(new Vector2D(mouseX, mouseY), Mouse.Button.fromInt(button), 0);
+        return super.mouseDragged(mouseX, mouseY, button, moveX, moveY);
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
