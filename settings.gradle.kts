@@ -21,19 +21,15 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-include("common")
-
-if (System.getenv("JITPACK") == null) {
-    include("fabric-1.15.2")
-    include("fabric-1.16.5")
-    include("fabric-1.19.4")
-    include("fabric-1.20")
-    include("fabric-1.20.2")
-    include("fabric-1.20.6")
-    include("fabric-1.21")
-    include("fabric-1.21.3")
-    include("fabric-1.21.5")
-    include("fabric-1.21.6")
-    include("fabric-1.21.9")
-    include("fabric-1.21.11")
-}
+include("fabric-1.15.2")
+include("fabric-1.16.5")
+include("fabric-1.19.4")
+include("fabric-1.20")
+include("fabric-1.20.2")
+include("fabric-1.20.6")
+include("fabric-1.21")
+include("fabric-1.21.3")
+include("fabric-1.21.5")
+include("fabric-1.21.6")
+include("fabric-1.21.9")
+include("fabric-1.21.11")

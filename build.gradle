@@ -12,8 +12,9 @@ configure(
     }
 
     configurations {
+        common
         library
-        implementation.extendsFrom library
+        implementation.extendsFrom library, common
     }
 
     dependencies {
@@ -26,9 +27,7 @@ configure(
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.1'
 
-        if (project.name != "common") {
-            library project(":common")
-        }
+        common 'com.github.MPKMod:MPKMod2:2.3.5'
     }
 
     repositories {
@@ -61,11 +60,8 @@ configure(
             ])
         }
 
-        if (project.name != "common") {
-            //destinationDirectory = rootProject.buildDir
-            doFirst {
-                archiveClassifier = project.name
-            }
+        doFirst {
+            archiveClassifier = project.name
         }
 
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -77,7 +73,12 @@ configure(
         }
         from {
             "../LICENSE"
-            "${project(":common").compileJava.temporaryDir}${File.separator}classes.txt"
+            def commonFile = configurations.common.files.find {
+                it.name.endsWith('.jar') && !it.name.contains('sources') && !it.name.contains('javadoc')
+            }
+            zipTree(commonFile).matching {
+                include "classes.txt"
+            }
         }
     }
 
@@ -89,9 +90,7 @@ configure(
 
 
     tasks.withType(JavaExec).configureEach {
-        if (project.name != "common") {
-            javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
-        }
+        javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
     }
 
     tasks.withType(JavaCompile).configureEach {
@@ -106,19 +105,31 @@ configure(
         options.encoding = 'UTF-8'
     }
 
-    if (project.name != "common") {
-        project.afterEvaluate {
+    project.afterEvaluate {
 
+        if (project.tasks.findByName('remapJar')) {
             remapJar {
                 inputFile.set project.jar.archiveFile
                 destinationDirectory = file("${rootProject.buildDir}/libs")
                 dependsOn project.jar
                 archiveFileName = project.jar.archiveFileName
             }
+        } else {
+            jar {
+                doLast {
+                    copy {
+                        from archiveFile.get().asFile
+                        into "${rootProject.buildDir}/libs"
+                    }
+                }
+            }
+        }
 
-            // Fix unimined runs bug
-            afterEvaluate {
-                runClient.doFirst {
+        // Fix unimined runs bug
+        afterEvaluate {
+            def runClientTask = project.tasks.findByName('runClient')
+            if (runClientTask != null) {
+                runClientTask.doFirst {
                     var classPathFile = null
                     if (project.name.startsWith("forge")) classPathFile = "legacy_classpath"
                     if (project.name.startsWith("fabric")) classPathFile = "remapClasspath"
@@ -132,18 +143,18 @@ configure(
                         }
                     }
                 }
+            }
 
-                var classPathFile = null
-                if (project.name.startsWith("forge")) classPathFile = "legacy_classpath"
-                if (project.name.startsWith("fabric")) classPathFile = "remapClasspath"
+            var classPathFile = null
+            if (project.name.startsWith("forge")) classPathFile = "legacy_classpath"
+            if (project.name.startsWith("fabric")) classPathFile = "remapClasspath"
 
-                if (classPathFile != null) {
-                    logger.lifecycle("Saving ${classPathFile} for project: ${project.name}")
-                    copy {
-                        from "${rootProject.buildDir}/unimined/${classPathFile}.txt"
-                        into "${rootProject.buildDir}/unimined/classpaths"
-                        rename { "${classPathFile}-${project.name}.txt" }
-                    }
+            if (classPathFile != null) {
+                logger.lifecycle("Saving ${classPathFile} for project: ${project.name}")
+                copy {
+                    from "${rootProject.buildDir}/unimined/${classPathFile}.txt"
+                    into "${rootProject.buildDir}/unimined/classpaths"
+                    rename { "${classPathFile}-${project.name}.txt" }
                 }
             }
         }
